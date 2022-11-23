@@ -25,22 +25,27 @@ def read_img(file):
 
 
 # Canny edge detection
-def canny_edge(img, sigma=0.33):
-    v = np.median(img)
-    lower = int(max(0, (1.0 - sigma) * v))
-    upper = int(min(255, (1.0 + sigma) * v))
-    edges = cv2.Canny(img, lower, upper)
-    return edges
+def canny_edge(img):
+
+    c_edges = cv2.Canny(img, 90, 200)
+    return c_edges
 
 
 # Hough line detection
 def hough_line(edges,img, min_line_length=100, max_line_gap=10):
     lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
+    # print("0000000000000000000000")
+    # print(lines[0][0][0])
+    # print("0000000000000000000000")
+    # print(lines[0][0][1])
+    # print(lines)
 
-    print(img.shape)
+
+    # print(img.shape)
     # The below for loop runs till r and theta values
     # are in the range of the 2d array
     for r_theta in lines:
+
         arr = np.array(r_theta[0], dtype=np.float64)
         r, theta = arr
         # Stores the value of cos(theta) in a
@@ -79,24 +84,23 @@ def hough_line(edges,img, min_line_length=100, max_line_gap=10):
 
     return lines, img
 
-# Separate line into horizontal and vertical
-def h_v_lines(lines):
-    h_lines, v_lines = [], []
-    for rho, theta in lines:
-        if theta < np.pi / 4 or theta > np.pi - np.pi / 4:
-            v_lines.append([rho, theta])
-        else:
-            h_lines.append([rho, theta])
 
-    cv2.line(img, v_lines, (0, 0 , 80), 2)
-    cv2.imshow('vec', img)
+def polar2cartesian(rho: float, theta_rad: float):
+
+    x = np.cos(theta_rad) * rho
+    y = np.sin(theta_rad) * rho
+    m = np.nan
+    if not np.isclose(x, 0.0):
+        m = y / x
+
+    b = 0.0
+    if m is not np.nan:
+        b = y - m * x
+
+    return m, b, x, y
 
 
-    return h_lines, v_lines
-
-
-img = read_img('chess_board_3.png')
-print(img.shape)
+img = read_img('chess_board_2.png')
 show(img)
 resized = resize_img(img)
 
@@ -107,7 +111,11 @@ edges = canny_edge(gray_blur)
 show(edges)
 lines, img = hough_line(edges, resized)
 show(img)
-# h_v_lines(lines)
+
+for i in range(26):
+    print(lines[i][0][0], lines[i][0][1])
+    print(polar2cartesian(lines[i][0][0], lines[i][0][1]))
+    print("---------------------------------")
 
 #
 # print(np.shape(img))
