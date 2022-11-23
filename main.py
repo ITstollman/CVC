@@ -1,42 +1,43 @@
 import cv2
 import numpy as np
 
-print (cv2.__version__)
-
 def show(img):
     cv2.imshow(str(img), img)
     cv2.waitKey(0)
 
+
+def resize_img(img):
+
+    imgScale = 1000 / img.shape[1]
+    X, Y = img.shape[1] * imgScale, img.shape[0] * imgScale
+    resized = cv2.resize(img, (int(X), int(Y)))
+    return resized
+
 def gray_blur(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray_blur = cv2.blur(gray, (5, 5))
-    show(gray_blur)
     return gray_blur
 
+# Read image and do lite image processing
+def read_img(file):
+    img = cv2.imread(str(file), 1)
+    return img
+
+
 # Canny edge detection
-def canny_edge(img):
-
-    c_edges = cv2.Canny(img, 90, 200)
-    show(c_edges)
-    return c_edges
-
-
-def normlize_img_size(img):
-
-    W = 1000
-    height, width, depth = img.shape
-    imgScale = W / width
-    newX, newY = img.shape[1] * imgScale, img.shape[0] * imgScale
-    resized = cv2.resize(img, (int(newX), int(newY)))
-    show(resized)
-    return resized
+def canny_edge(img, sigma=0.33):
+    v = np.median(img)
+    lower = int(max(0, (1.0 - sigma) * v))
+    upper = int(min(255, (1.0 + sigma) * v))
+    edges = cv2.Canny(img, lower, upper)
+    return edges
 
 
 # Hough line detection
-def hough_line(edges, min_line_length=100, max_line_gap=10):
+def hough_line(edges,img, min_line_length=100, max_line_gap=10):
     lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
 
-    print(lines)
+    print(img.shape)
     # The below for loop runs till r and theta values
     # are in the range of the 2d array
     for r_theta in lines:
@@ -75,23 +76,40 @@ def hough_line(edges, min_line_length=100, max_line_gap=10):
     # All the changes made in the input image are finally
     # written on a new image houghlines.jpg
     cv2.imwrite('linesDetected.jpg', img)
-    show(img)
 
-    return lines
+    return lines, img
+
+# Separate line into horizontal and vertical
+def h_v_lines(lines):
+    h_lines, v_lines = [], []
+    for rho, theta in lines:
+        if theta < np.pi / 4 or theta > np.pi - np.pi / 4:
+            v_lines.append([rho, theta])
+        else:
+            h_lines.append([rho, theta])
+
+    cv2.line(img, v_lines, (0, 0 , 80), 2)
+    cv2.imshow('vec', img)
 
 
-
-def captur_img(img):
-
-    img = cv2.imread(str(img), 1)
-    show(img)
-
-    return img
+    return h_lines, v_lines
 
 
+img = read_img('chess_board_3.png')
+print(img.shape)
+show(img)
+resized = resize_img(img)
 
-img = captur_img('chess_board_2.png')
-resized = normlize_img_size(img)
+show(resized)
 gray_blur = gray_blur(resized)
-canny_edge = canny_edge(gray_blur)
-hough_line = hough_line(canny_edge)
+show(gray_blur)
+edges = canny_edge(gray_blur)
+show(edges)
+lines, img = hough_line(edges, resized)
+show(img)
+# h_v_lines(lines)
+
+#
+# print(np.shape(img))
+# print(np.shape(gray_blur))
+
