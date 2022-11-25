@@ -1,5 +1,9 @@
+from collections import defaultdict
+
 import cv2
 import numpy as np
+from scipy import spatial, cluster
+
 
 def show(img):
     cv2.imshow(str(img), img)
@@ -34,16 +38,10 @@ def canny_edge(img):
 # Hough line detection
 def hough_line(edges,img, min_line_length=100, max_line_gap=10):
     lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
-    # print("0000000000000000000000")
-    # print(lines[0][0][0])
-    # print("0000000000000000000000")
-    # print(lines[0][0][1])
-    # print(lines)
 
+    h_lines = []
+    v_lines = []
 
-    # print(img.shape)
-    # The below for loop runs till r and theta values
-    # are in the range of the 2d array
     for r_theta in lines:
 
         arr = np.array(r_theta[0], dtype=np.float64)
@@ -76,16 +74,26 @@ def hough_line(edges,img, min_line_length=100, max_line_gap=10):
         # (0,0,255) denotes the colour of the line to be
         # drawn. In this case, it is red.
 
-        cv2.line(img, (x1, y1), (x2, y2), (0, 255, 80), 2)
+        if theta < np.pi / 4 or theta > np.pi - np.pi / 4:
+            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 80), 2)
+            show(img)
+            h_lines.append((r, theta))
+
+        else:
+            cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255 ), 2)
+            show(img)
+            v_lines.append((r, theta))
 
     # All the changes made in the input image are finally
     # written on a new image houghlines.jpg
     cv2.imwrite('linesDetected.jpg', img)
 
-    return lines, img
+    return h_lines, v_lines, img
 
 
-def polar2cartesian(rho: float, theta_rad: float):
+
+
+def polar2cartesian(rho: float, theta_rad: float, rotate90: bool = False):
 
     x = np.cos(theta_rad) * rho
     y = np.sin(theta_rad) * rho
@@ -100,7 +108,7 @@ def polar2cartesian(rho: float, theta_rad: float):
     return m, b, x, y
 
 
-img = read_img('chess_board_2.png')
+img = read_img('chess_board_3.png')
 show(img)
 resized = resize_img(img)
 
@@ -109,15 +117,27 @@ gray_blur = gray_blur(resized)
 show(gray_blur)
 edges = canny_edge(gray_blur)
 show(edges)
-lines, img = hough_line(edges, resized)
+h_lines, v_lines , img = hough_line(edges, resized)
 show(img)
 
-for i in range(26):
-    print(lines[i][0][0], lines[i][0][1])
-    print(polar2cartesian(lines[i][0][0], lines[i][0][1]))
-    print("---------------------------------")
+points = line_intersections(h_lines, v_lines , img)
 
-#
-# print(np.shape(img))
-# print(np.shape(gray_blur))
+image = cv2.rectangle(img, (22,33), (199,290), (233,0,55), 2)
+image = cv2.rectangle(img, (22,33), (900 ,290), (2,0,55), 2)
+
+image = cv2.rectangle(img, (222,33), (199,290), (9,0,211), 2)
+
+show(img)
+
+dictionary = {}
+for point in points:
+    print(point)
+    dictionary[str(int(point[0]))].append(point)
+
+print(dictionary)
+
+
+
+
+
 
