@@ -1,3 +1,4 @@
+import math
 from collections import defaultdict
 
 import cv2
@@ -39,8 +40,8 @@ def canny_edge(img):
 def hough_line(edges,img, min_line_length=100, max_line_gap=10):
     lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
 
-    h_lines = []
-    v_lines = []
+    h_lines = {}
+    v_lines = {}
 
     for r_theta in lines:
 
@@ -73,16 +74,42 @@ def hough_line(edges,img, min_line_length=100, max_line_gap=10):
         # cv2.line draws a line in img from the point(x1,y1) to (x2,y2).
         # (0,0,255) denotes the colour of the line to be
         # drawn. In this case, it is red.
+        print("x1", x1, "////////", "y1", y1, "/////", "x2", x2, "//////", "y2", y2)
+        exists = False
 
         if theta < np.pi / 4 or theta > np.pi - np.pi / 4:
-            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 80), 2)
-            show(img)
-            h_lines.append((r, theta))
+
+            print("v")
+
+            for line in v_lines.values():
+
+                if math.isclose(line[0][0], x1, abs_tol=50) or \
+                        math.isclose(line[1][0], x2, abs_tol=50     ):
+
+                    print("exists v",line[0][0], line[1][0])
+                    exists = True
+
+            if not exists:
+                cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255 ), 2)
+                show(img)
+                v_lines[(r,theta)] = [(x1, y1), (x2, y2)]
 
         else:
-            cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255 ), 2)
-            show(img)
-            v_lines.append((r, theta))
+
+            # for line in h_lines:
+            print("h")
+            for line in h_lines.values():
+                if math.isclose(line[0][1], y1, abs_tol=50) or \
+                        math.isclose(line[1][1], y2, abs_tol=50):
+                    print("exists h", "y1", line[0][1], "y2", line[1][1])
+                    exists = True
+
+            if not exists:
+                cv2.line(img, (x1, y1), (x2, y2), (0, 255, 80), 2)
+                show(img)
+                # h_lines.append((r, theta))
+                h_lines[(r, theta)] = [(x1, y1), (x2, y2)]
+
 
     # All the changes made in the input image are finally
     # written on a new image houghlines.jpg
@@ -91,6 +118,19 @@ def hough_line(edges,img, min_line_length=100, max_line_gap=10):
     return h_lines, v_lines, img
 
 
+# Find the intersections of the lines
+def line_intersections(h_lines, v_lines, img):
+    points = []
+    for r_h, t_h in h_lines:
+        for r_v, t_v in v_lines:
+            a = np.array([[np.cos(t_h), np.sin(t_h)], [np.cos(t_v), np.sin(t_v)]])
+            b = np.array([r_h, r_v])
+            inter_point = np.linalg.solve(a, b)
+            points.append(inter_point)
+
+            cv2.circle(img, (int(inter_point[0]), int(inter_point[1])), radius=5, color=(255, 0, 0  ), thickness=-1)
+            show(img)
+    return np.array(points)
 
 
 def polar2cartesian(rho: float, theta_rad: float, rotate90: bool = False):
@@ -117,10 +157,10 @@ gray_blur = gray_blur(resized)
 show(gray_blur)
 edges = canny_edge(gray_blur)
 show(edges)
-h_lines, v_lines , img = hough_line(edges, resized)
+h_lines, v_lines, img = hough_line(edges, resized)
 show(img)
 
-points = line_intersections(h_lines, v_lines , img)
+points = line_intersections(h_lines.keys(), v_lines.keys() , img)
 
 image = cv2.rectangle(img, (22,33), (199,290), (233,0,55), 2)
 image = cv2.rectangle(img, (22,33), (900 ,290), (2,0,55), 2)
@@ -130,14 +170,19 @@ image = cv2.rectangle(img, (222,33), (199,290), (9,0,211), 2)
 show(img)
 
 dictionary = {}
+
+print(points[0].sort())
+
+arrX = []
+arrY = []
+
+print("THE POINTS  ")
 for point in points:
-    print(point)
-    dictionary[str(int(point[0]))].append(point)
+    arrX.append(point[0])
+    arrY.append(point[0])
 
+    # dictionary[str(int(point[0]))].append(point)
+print(arrX)
+arrX.sort()
+print(arrY)
 print(dictionary)
-
-
-
-
-
-
