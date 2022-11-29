@@ -1,15 +1,15 @@
 import math
-from collections import defaultdict
+import random
 
 import cv2
 import numpy as np
-from scipy import spatial, cluster
+# from scipy import spatial, cluster
+from matplotlib import pyplot as plt
 
 
 def show(img):
     cv2.imshow(str(img), img)
     cv2.waitKey(0)
-
 
 def resize_img(img):
 
@@ -28,13 +28,15 @@ def read_img(file):
     img = cv2.imread(str(file), 1)
     return img
 
-
 # Canny edge detection
-def canny_edge(img):
+def canny_edge(img, sigma = 0.33):
+    v = np.median(img)
 
-    c_edges = cv2.Canny(img, 90, 200)
-    return c_edges
-
+    lower = int(max(0, (1.0 - sigma) * v))
+    upper = int(min(255, (1.0 + sigma) * v))
+    edged = cv2.Canny(img, lower, upper)
+    c_edges = cv2.Canny(img, 190, 200)
+    return edged
 
 # Hough line detection
 def hough_line(edges,img, min_line_length=100, max_line_gap=10):
@@ -133,56 +135,111 @@ def line_intersections(h_lines, v_lines, img):
     return np.array(points)
 
 
-def polar2cartesian(rho: float, theta_rad: float, rotate90: bool = False):
-
-    x = np.cos(theta_rad) * rho
-    y = np.sin(theta_rad) * rho
-    m = np.nan
-    if not np.isclose(x, 0.0):
-        m = y / x
-
-    b = 0.0
-    if m is not np.nan:
-        b = y - m * x
-
-    return m, b, x, y
-
-
-img = read_img('chess_board_3.png')
+img = read_img('AFRICAֹ_2.jpeg')
 show(img)
 resized = resize_img(img)
 
 show(resized)
-gray_blur = gray_blur(resized)
+gray_blur = gray_blur(img)
+
+show(gray_blur)
 show(gray_blur)
 edges = canny_edge(gray_blur)
 show(edges)
-h_lines, v_lines, img = hough_line(edges, resized)
-show(img)
+h_lines, v_lines, img2 = hough_line(edges, img)
+show(img2)
 
-points = line_intersections(h_lines.keys(), v_lines.keys() , img)
+points = line_intersections(h_lines.keys(), v_lines.keys() , img2)
 
-image = cv2.rectangle(img, (22,33), (199,290), (233,0,55), 2)
-image = cv2.rectangle(img, (22,33), (900 ,290), (2,0,55), 2)
-
-image = cv2.rectangle(img, (222,33), (199,290), (9,0,211), 2)
+# image = cv2.rectangle(img, (22, 33), (199, 290), (233, 0, 55), 2)
+# image = cv2.rectangle(img, (22, 33), (900, 290), (2, 0, 55), 2)
+#
+# image = cv2.rectangle(img, (222, 33), (199, 290), (9, 0, 211), 2)
 
 show(img)
 
 dictionary = {}
 
-print(points[0].sort())
-
+print(points[0])
 arrX = []
 arrY = []
 
 print("THE POINTS  ")
 for point in points:
     arrX.append(point[0])
-    arrY.append(point[0])
+    arrY.append(point[1])
 
-    # dictionary[str(int(point[0]))].append(point)
-print(arrX)
 arrX.sort()
-print(arrY)
-print(dictionary)
+arrX_coor = [arrX[0], arrX[9], int(arrX[18]), int(arrX[27]), int(arrX[36]),
+             int(arrX[45]), int(arrX[54]), int(arrX[63]), int(arrX[72])]
+arrY.sort()
+arrY_coor = [arrY[0], arrY[9], int(arrY[18]), int(arrY[27]), int(arrY[36]),
+             int(arrY[45]), int(arrY[54]), int(arrY[63]), int(arrY[72])]
+
+
+print("arrX_coor", arrX_coor)
+print("arrY_coor", arrY_coor)
+
+print(arrX_coor[0], arrY_coor[0])
+
+
+clean_img = img.copy()
+squares = {}
+square_num = 1
+for i in range(8):
+    for j in range(8):
+        cv2.rectangle(img, (int(arrX_coor[j]), int(arrY_coor[i])),
+                      (int(arrX_coor[j+1]) , int(arrY_coor[i+1])),
+                      (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 5)
+
+
+        cv2.arrowedLine(img, (int(arrX_coor[j]), int(arrY_coor[i])), (int(arrX_coor[j])+20, int(arrY_coor[i])+20 ), (233, 0, 55), 2)
+
+        new_square = [int(arrX_coor[j]), int(arrY_coor[i]),
+                      int(arrX_coor[j+1]), int(arrY_coor[i+1])]
+        squares[square_num] = new_square
+        print("square_num", square_num)
+
+        cropped = clean_img[int(arrY_coor[i]): int(arrY_coor[i+1]), int(arrX_coor[j]): int(arrX_coor[j+1])]
+        # cv2.imwrite('./raw_data/alpha_data_image' + str(square) + '.jpeg', cropped)
+        cv2.imwrite('cropped' + str(square_num) + '.jpeg', cropped)
+
+        square_num += 1
+        show(img)
+show(img)
+print(squares)
+# cv2.arrowedLine(img, (int(arrX_coor[j]), int(arrY_coor[i])), (int(arrX_coor[j]) + 20, int(arrY_coor[i]) + 20),
+#                 (233, 0, 55), 2)
+
+
+cv2.arrowedLine(img, (int(squares[2][0]), int(squares[2][1])), (int(squares[60][0]), int(squares[60][1])),
+                (122, 0, 255), 10)
+show(img)
+
+print( (int(squares[2][0]), int(squares[2][1])), (int(squares[60][0]), int(squares[60][1])),
+                (122, 0, 255), 10)
+
+print("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+cv2.arrowedLine(img, (int(squares[18][0]), int(squares[18][1])), (int(squares[29][0]), int(squares[29][1])),
+                (0, 0, 20), 14)
+show(img)
+
+cv2.arrowedLine(img, (int(squares[45][0]), int(squares[45][1])), (int(squares[10][0]), int(squares[10][1])),
+                (0, 277, 255), 2)
+show(img)
+
+
+# cv2.arrowedLine(img, int(squares[2][0]), int(squares[2][1]), int(squares[2][0]), int(squares[2][1]),
+#                 (233, 0, 55), 2)
+# cv2.arrowedLine(img, int(squares[2][0]), int(squares[2][1]), int(squares[2][0]), int(squares[2][1]),
+#                 (233, 0, 55), 2)
+# cv2.arrowedLine(img, int(squares[2][0]), int(squares[2][1]), int(squares[2][0]), int(squares[2][1]),
+#                 (233, 0, 55), 2)
+# cv2.warpPerspective(image, matrix, (width, height))
+# https://theailearner.com/tag/cv2-getperspectivetransform/
+
+#ways to get the dataset bigger
+#rotation
+# image = cv2.rotate(src, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+#crop the image a little bit diffrently, for example - higher, righter and so.
