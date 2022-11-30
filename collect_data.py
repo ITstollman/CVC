@@ -2,9 +2,119 @@ import math
 import random
 
 import cv2
+import np as np
 import numpy as np
 # from scipy import spatial, cluster
 from matplotlib import pyplot as plt
+
+
+def creat_squars(img):
+    squares = {}
+    square_num = 1
+    for i in range(8):
+        for j in range(8):
+            print("THE NEW SQR IS")
+            print("i", i, "j", j)
+
+            print("[int(rows[i+1][j][0]),    int(rows[i+1][j][1])]", [int(rows[i + 1][j][0]), int(rows[i + 1][j][1])])
+            print("[int(rows[i+][j][0]),    int(rows[i][j][1])]", [int(rows[i][j][0]), int(rows[i][j][1])])
+            print("[int(rows[i][j+1][0]),    int(rows[i][j+1][1])]", [int(rows[i][j + 1][0]), int(rows[i][j + 1][1])])
+            print("[int(rows[i+1][j+1][0]),    int(rows[i+1][j+1][1])]",
+                  [int(rows[i + 1][j + 1][0]), int(rows[i + 1][j + 1][1])])
+
+            new_square = [[int(rows[i + 1][j][0]), int(rows[i + 1][j][1])],
+                          [int(rows[i][j][0]), int(rows[i][j][1])],
+                          [int(rows[i][j + 1][0]), int(rows[i][j + 1][1])],
+                          [int(rows[i + 1][j + 1][0]), int(rows[i + 1][j + 1][1])]]
+
+            cv2.circle(img, (int(rows[i + 1][j][0]), int(rows[i + 1][j][1])), radius=5, color=(22, 0, 0), thickness=-1)
+            print("first")
+            show(img)
+            cv2.circle(img, (int(rows[i][j][0]), int(rows[i][j][1])), radius=5, color=(22, 100, 0), thickness=-1)
+            print("second")
+            show(img)
+
+            cv2.circle(img, (int(rows[i][j + 1][0]), int(rows[i][j + 1][1])), radius=5, color=(0, 0, 122), thickness=-1)
+            print("third")
+            show(img)
+
+            cv2.circle(img, (int(rows[i + 1][j + 1][0]), int(rows[i + 1][j + 1][1])), radius=5, color=(2, 22, 222),
+                       thickness=-1)
+            print("FORTH")
+            show(img)
+
+            print("i", i, "j", j)
+            print("new_square", new_square)
+
+            rectangle = np.array([new_square], np.int32)
+            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            rectangleImage = cv2.polylines(img, [rectangle], True, color, thickness=7)
+
+            show(rectangleImage)
+
+            perspective_sqr = perspective(img,
+                                          [int(rows[i + 1][j][0]), int(rows[i + 1][j][1])],
+                                          [int(rows[i][j][0]), int(rows[i][j][1])],
+                                          [int(rows[i][j + 1][0]), int(rows[i][j + 1][1])],
+                                          [int(rows[i + 1][j + 1][0]), int(rows[i + 1][j + 1][1])])
+
+            show(perspective_sqr)
+
+            squares[square_num] = new_square
+            print("square_num", square_num)
+
+            cv2.imwrite('perspective_sqr' + str(square_num) + '.jpeg', perspective_sqr)
+
+            square_num += 1
+            show(img)
+    show(img)
+    print(squares)
+
+    cv2.arrowedLine(img, (int(squares[2][0][0]), int(squares[2][0][1])),
+                    (int(squares[60][0][0]), int(squares[60][0][1])),
+                    (122, 0, 255), 10)
+    return squares
+
+def perspective(img, pt_A, pt_B, pt_C, pt_D):
+
+    width_AD = np.sqrt(((pt_A[0] - pt_D[0]) ** 2) + ((pt_A[1] - pt_D[1]) ** 2))
+    width_BC = np.sqrt(((pt_B[0] - pt_C[0]) ** 2) + ((pt_B[1] - pt_C[1]) ** 2))
+    maxWidth = max(int(width_AD), int(width_BC))
+
+    height_AB = np.sqrt(((pt_A[0] - pt_B[0]) ** 2) + ((pt_A[1] - pt_B[1]) ** 2))
+    height_CD = np.sqrt(((pt_C[0] - pt_D[0]) ** 2) + ((pt_C[1] - pt_D[1]) ** 2))
+    maxHeight = max(int(height_AB), int(height_CD))
+
+    input_pts = np.float32([pt_A, pt_B, pt_C, pt_D])
+    output_pts = np.float32([[0, 0],
+                             [0, maxHeight - 1],
+                             [maxWidth - 1, maxHeight - 1],
+                             [maxWidth - 1, 0]])
+
+    # Compute the perspective transform M
+    M = cv2.getPerspectiveTransform(input_pts, output_pts)
+
+    out = cv2.warpPerspective(img, M, (maxWidth, maxHeight), flags=cv2.INTER_LINEAR)
+
+    return out
+
+def sort_points(points):
+    sorter = lambda x: (x[1], x[0])
+    sorted_l = sorted(points, key=sorter)
+    print(sorted_l)
+
+    one = sorted_l[0:9]
+    two = sorted_l[9:18]
+    three = sorted_l[18:27]
+    four = sorted_l[27:36]
+    five = sorted_l[36:45]
+    six = sorted_l[45:54]
+    seven = sorted_l[54:63]
+    eight = sorted_l[63:72]
+    nine = sorted_l[72:81]
+    print("eight", eight)
+    rows = [one, two, three, four, five, six, seven, eight, nine]
+    return rows
 
 
 def show(img):
@@ -135,7 +245,7 @@ def line_intersections(h_lines, v_lines, img):
     return np.array(points)
 
 
-img = read_img('AFRICAֹ_2.jpeg')
+img = read_img('chess_board_3.png')
 show(img)
 resized = resize_img(img)
 
@@ -151,90 +261,16 @@ show(img2)
 
 points = line_intersections(h_lines.keys(), v_lines.keys() , img2)
 
-# image = cv2.rectangle(img, (22, 33), (199, 290), (233, 0, 55), 2)
-# image = cv2.rectangle(img, (22, 33), (900, 290), (2, 0, 55), 2)
-#
-# image = cv2.rectangle(img, (222, 33), (199, 290), (9, 0, 211), 2)
+show(img)
+
+rows = sort_points(points)
+
+squars = creat_squars(img)
 
 show(img)
 
-dictionary = {}
-
-print(points[0])
-arrX = []
-arrY = []
-
-print("THE POINTS  ")
-for point in points:
-    arrX.append(point[0])
-    arrY.append(point[1])
-
-arrX.sort()
-arrX_coor = [arrX[0], arrX[9], int(arrX[18]), int(arrX[27]), int(arrX[36]),
-             int(arrX[45]), int(arrX[54]), int(arrX[63]), int(arrX[72])]
-arrY.sort()
-arrY_coor = [arrY[0], arrY[9], int(arrY[18]), int(arrY[27]), int(arrY[36]),
-             int(arrY[45]), int(arrY[54]), int(arrY[63]), int(arrY[72])]
 
 
-print("arrX_coor", arrX_coor)
-print("arrY_coor", arrY_coor)
-
-print(arrX_coor[0], arrY_coor[0])
-
-
-clean_img = img.copy()
-squares = {}
-square_num = 1
-for i in range(8):
-    for j in range(8):
-        cv2.rectangle(img, (int(arrX_coor[j]), int(arrY_coor[i])),
-                      (int(arrX_coor[j+1]) , int(arrY_coor[i+1])),
-                      (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 5)
-
-
-        cv2.arrowedLine(img, (int(arrX_coor[j]), int(arrY_coor[i])), (int(arrX_coor[j])+20, int(arrY_coor[i])+20 ), (233, 0, 55), 2)
-
-        new_square = [int(arrX_coor[j]), int(arrY_coor[i]),
-                      int(arrX_coor[j+1]), int(arrY_coor[i+1])]
-        squares[square_num] = new_square
-        print("square_num", square_num)
-
-        cropped = clean_img[int(arrY_coor[i]): int(arrY_coor[i+1]), int(arrX_coor[j]): int(arrX_coor[j+1])]
-        # cv2.imwrite('./raw_data/alpha_data_image' + str(square) + '.jpeg', cropped)
-        cv2.imwrite('cropped' + str(square_num) + '.jpeg', cropped)
-
-        square_num += 1
-        show(img)
-show(img)
-print(squares)
-# cv2.arrowedLine(img, (int(arrX_coor[j]), int(arrY_coor[i])), (int(arrX_coor[j]) + 20, int(arrY_coor[i]) + 20),
-#                 (233, 0, 55), 2)
-
-
-cv2.arrowedLine(img, (int(squares[2][0]), int(squares[2][1])), (int(squares[60][0]), int(squares[60][1])),
-                (122, 0, 255), 10)
-show(img)
-
-print( (int(squares[2][0]), int(squares[2][1])), (int(squares[60][0]), int(squares[60][1])),
-                (122, 0, 255), 10)
-
-print("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
-cv2.arrowedLine(img, (int(squares[18][0]), int(squares[18][1])), (int(squares[29][0]), int(squares[29][1])),
-                (0, 0, 20), 14)
-show(img)
-
-cv2.arrowedLine(img, (int(squares[45][0]), int(squares[45][1])), (int(squares[10][0]), int(squares[10][1])),
-                (0, 277, 255), 2)
-show(img)
-
-
-# cv2.arrowedLine(img, int(squares[2][0]), int(squares[2][1]), int(squares[2][0]), int(squares[2][1]),
-#                 (233, 0, 55), 2)
-# cv2.arrowedLine(img, int(squares[2][0]), int(squares[2][1]), int(squares[2][0]), int(squares[2][1]),
-#                 (233, 0, 55), 2)
-# cv2.arrowedLine(img, int(squares[2][0]), int(squares[2][1]), int(squares[2][0]), int(squares[2][1]),
-#                 (233, 0, 55), 2)
 # cv2.warpPerspective(image, matrix, (width, height))
 # https://theailearner.com/tag/cv2-getperspectivetransform/
 
@@ -243,3 +279,4 @@ show(img)
 # image = cv2.rotate(src, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
 #crop the image a little bit diffrently, for example - higher, righter and so.
+

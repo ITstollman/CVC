@@ -14,7 +14,13 @@ min_detection_confidence = 0.75,
                            min_tracking_confidence = 0.75,
                                                      max_num_hands = 2)
 
+
+#TODO BUILD MY OWN HAND DETECTION!!!
 # Start capturing video from webcam
+# HAND ABOVE A CHESS BOARD CLASSIFICARE
+
+
+
 cap = cv2.VideoCapture(0)
 
 while True:
